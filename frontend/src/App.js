@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Upload, Users, UserPlus, LogOut, Eye, Trash2, AlertCircle } from 'lucide-react';
 
-const API_URL = 'http://localhost:5000/api';
+const API_URL = process.env.REACT_APP_API_URL;
 
 function App() {
   const [isLoggedIn, setIsLoggedIn] = useState(false);
