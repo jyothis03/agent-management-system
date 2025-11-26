@@ -89,7 +89,8 @@ function App() {
       setLoginEmail('');
       setLoginPassword('');
     } else {
-      setError(`Login failed (${response.status}): ${data.message || 'Unknown error'}`);
+      // Hide raw status codes; keep message user-friendly.
+      setError(data.message || 'Login failed. Please try again.');
       console.error('❌ Login error:', data);
     }
   } catch (err) {

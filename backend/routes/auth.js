@@ -5,7 +5,7 @@ const jwt = require('jsonwebtoken');
 const Admin = require('../models/Admin');
 
 router.post('/login', async (req, res) => {
-  try {
+  try {git a
     const { email, password } = req.body;
     
     // Quick sanity check before hitting the database.
