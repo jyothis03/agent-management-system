@@ -1,3 +1,4 @@
+// Auth routes remain lightweight so they can be easily swapped later.
 const express = require('express');
 const router = express.Router();
 const jwt = require('jsonwebtoken');
@@ -7,6 +8,7 @@ router.post('/login', async (req, res) => {
   try {
     const { email, password } = req.body;
     
+    // Quick sanity check before hitting the database.
     if (!email || !password) {
       return res.status(400).json({
         success: false,
@@ -14,6 +16,7 @@ router.post('/login', async (req, res) => {
       });
     }
 
+    // Pull the admin record so we can reuse the instance later.
     const admin = await Admin.findOne({ email });
     if (!admin) {
       return res.status(401).json({
@@ -33,6 +36,7 @@ router.post('/login', async (req, res) => {
       });
     }
 
+    // Keep the payload small; the frontend only needs id and email.
     const token = jwt.sign(
       { id: admin._id, email: admin.email },
       process.env.JWT_SECRET,
@@ -63,6 +67,7 @@ router.post('/register', async (req, res) => {
   try {
     const { email, password } = req.body;
 
+    // No point in doing any work without both fields.
     if (!email || !password) {
       return res.status(400).json({
         success: false,
@@ -70,6 +75,7 @@ router.post('/register', async (req, res) => {
       });
     }
 
+    // Prevent duplicate accounts since admins are unique.
     const existingAdmin = await Admin.findOne({ email });
     if (existingAdmin) {
       return res.status(409).json({
@@ -78,6 +84,7 @@ router.post('/register', async (req, res) => {
       });
     }
 
+    // Let the model handle hashing through its pre-save hook.
     const admin = new Admin({ email, password });
     await admin.save();
 

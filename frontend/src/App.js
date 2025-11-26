@@ -2,8 +2,10 @@ import React, { useState, useEffect } from 'react';
 import { Upload, Users, UserPlus, LogOut, Eye, Trash2, AlertCircle } from 'lucide-react';
 
 const API_URL = process.env.REACT_APP_API_URL;
+// Most calls hit the same base URL, so keep it configurable.
 
 function App() {
+  // Local UI state is grouped roughly by feature area.
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [token, setToken] = useState('');
   const [currentView, setCurrentView] = useState('agents');
@@ -26,6 +28,7 @@ function App() {
   const [selectedFile, setSelectedFile] = useState(null);
 
   useEffect(() => {
+    // Keep the user signed in across refreshes if a token is present.
     const savedToken = window.localStorage.getItem('token');
     if (savedToken) {
       setToken(savedToken);
@@ -34,6 +37,7 @@ function App() {
   }, []);
 
   useEffect(() => {
+    // This fixer watches for browser autofill so the state stays in sync.
     try {
       setTimeout(() => {
         const emailInput = document.getElementById('login-email');
@@ -50,12 +54,14 @@ function App() {
   }, []);
 
   useEffect(() => {
+    // Only fetch when the user is authenticated and actually looking at agents.
     if (isLoggedIn && currentView === 'agents') {
       fetchAgents();
     }
   }, [isLoggedIn, currentView]);
 
-const handleLogin = async () => {
+  // Authentication helpers --------------------------------------------------
+  const handleLogin = async () => {
   setError('');
   setSuccess('');
 
@@ -93,6 +99,7 @@ const handleLogin = async () => {
 };
 
   const handleLogout = () => {
+    // Full reset so stale lists don't flash when another admin logs in.
     window.localStorage.removeItem('token');
     setToken('');
     setIsLoggedIn(false);
@@ -100,6 +107,7 @@ const handleLogin = async () => {
     setDistribution([]);
   };
 
+  // Data fetching helpers ---------------------------------------------------
   const fetchAgents = async () => {
     setLoading(true);
     try {
@@ -116,6 +124,7 @@ const handleLogin = async () => {
     setLoading(false);
   };
 
+  // Agent CRUD keeps things simple for the assignment.
   const handleCreateAgent = async () => {
     setError('');
     setSuccess('');
@@ -160,6 +169,7 @@ const handleLogin = async () => {
   };
 
   const handleDeleteAgent = async (id) => {
+    // Confirm client-side to avoid accidental deletions.
     if (!window.confirm('Are you sure you want to delete this agent?')) return;
 
     try {
@@ -181,6 +191,7 @@ const handleLogin = async () => {
     }
   };
 
+  // Upload + distribution flow ------------------------------------------------
   const handleFileUpload = async () => {
     setError('');
     setSuccess('');
@@ -282,6 +293,7 @@ const handleLogin = async () => {
     setLoading(false);
   };
 
+  // Split the UI into the login screen vs the dashboard.
   if (!isLoggedIn) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 flex items-center justify-center p-4">

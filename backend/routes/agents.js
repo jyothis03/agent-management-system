@@ -1,12 +1,15 @@
+// Agents API keeps everything behind auth so we do not leak data.
 const express = require('express');
 const router = express.Router();
 const Agent = require('../models/Agent');
 const authenticateToken = require('../middleware/auth');
 
+// Protect every route instead of sprinkling middleware per handler.
 router.use(authenticateToken);
 
 router.get('/', async (req, res) => {
   try {
+    // Latest agents first keeps the dashboard feeling up to date.
     const agents = await Agent.find()
       .select('-password')
       .sort({ createdAt: -1 });
@@ -53,6 +56,7 @@ router.post('/', async (req, res) => {
   try {
     const { name, email, mobile, password } = req.body;
 
+    // Keep field validation server-side even if the UI checks it.
     if (!name || !email || !mobile || !password) {
       return res.status(400).json({
         success: false,
@@ -60,6 +64,7 @@ router.post('/', async (req, res) => {
       });
     }
 
+    // Email is treated as unique so the first match wins.
     const existingAgent = await Agent.findOne({ email });
     if (existingAgent) {
       return res.status(409).json({
@@ -68,6 +73,7 @@ router.post('/', async (req, res) => {
       });
     }
 
+    // Hard cap acts as a lightweight licensing guard.
     const agentCount = await Agent.countDocuments();
     if (agentCount >= 5) {
       return res.status(400).json({
@@ -76,6 +82,7 @@ router.post('/', async (req, res) => {
       });
     }
 
+    // Use the model to handle hashing and timestamps.
     const agent = new Agent({
       name,
       email,
@@ -106,6 +113,7 @@ router.put('/:id', async (req, res) => {
   try {
     const { name, email, mobile, isActive } = req.body;
 
+    // Build an update object to avoid overwriting existing values with null.
     const updateData = {};
     if (name) updateData.name = name;
     if (email) updateData.email = email;

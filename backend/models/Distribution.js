@@ -1,3 +1,4 @@
+// Distribution snapshots let admins audit each upload later on.
 const mongoose = require('mongoose');
 
 const assignedSchema = new mongoose.Schema({
@@ -12,6 +13,7 @@ const assignedSchema = new mongoose.Schema({
   count: { type: Number, default: 0 },
 });
 
+// Each document represents a single uploaded file + split result.
 const distributionSchema = new mongoose.Schema({
   filename: { type: String },
   uploadedBy: { type: mongoose.Schema.Types.ObjectId, ref: 'Admin' },

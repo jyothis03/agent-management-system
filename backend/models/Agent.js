@@ -1,3 +1,4 @@
+// Agent accounts mirror admins but track assignments directly.
 const mongoose = require('mongoose');
 const bcrypt = require('bcryptjs');
 
@@ -23,6 +24,7 @@ const agentSchema = new mongoose.Schema({
     type: String,
     required: [true, 'Password is required'],
   },
+  // Customers remain embedded so each agent sees their own list fast.
   assignedCustomers: [
     {
       FirstName: { type: String },
@@ -37,6 +39,7 @@ const agentSchema = new mongoose.Schema({
   },
 }, { timestamps: true });
 
+// Auto-hash new or changed passwords.
 agentSchema.pre('save', async function(next) {
   if (!this.isModified('password')) return next();
   this.password = await bcrypt.hash(this.password, 10);

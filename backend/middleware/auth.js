@@ -1,7 +1,9 @@
+// Centralized auth middleware keeps route code tidy.
 const jwt = require('jsonwebtoken');
 
 const authenticateToken = (req, res, next) => {
   try {
+    // Expecting the usual "Bearer <token>" format.
     const authHeader = req.headers['authorization'];
     const token = authHeader && authHeader.split(' ')[1];
 
@@ -20,6 +22,7 @@ const authenticateToken = (req, res, next) => {
         });
       }
 
+      // Attach the decoded payload so downstream handlers know the caller.
       req.user = decoded;
       next();
     });

@@ -1,3 +1,4 @@
+// Upload route handles the heavy lifting for customer distribution.
 const express = require('express');
 const router = express.Router();
 const multer = require('multer');
@@ -7,6 +8,7 @@ const Agent = require('../models/Agent');
 const Distribution = require('../models/Distribution');
 const authenticateToken = require('../middleware/auth');
 
+// Keep files in memory since uploads are small and short-lived.
 const storage = multer.memoryStorage();
 const upload = multer({
   storage,
@@ -29,6 +31,7 @@ const upload = multer({
   },
 });
 
+// Helpers stay near the top so the main route reads cleaner.
 const parseCSV = (buffer) => {
   return new Promise((resolve, reject) => {
     const csvString = buffer.toString('utf-8');
@@ -48,6 +51,7 @@ const parseExcel = (buffer) => {
   return XLSX.utils.sheet_to_json(worksheet);
 };
 
+// Round-robin assignment keeps the workload even.
 const distributeCustomers = (customers, agents) => {
   const distributions = agents.map(() => []);
   
@@ -68,6 +72,7 @@ router.post('/customers', authenticateToken, upload.single('file'), async (req, 
       });
     }
 
+    // Only active agents should receive customers.
     const agents = await Agent.find({ isActive: true }).select('-password');
     
     if (agents.length === 0) {
@@ -81,6 +86,7 @@ router.post('/customers', authenticateToken, upload.single('file'), async (req, 
     const fileExt = req.file.originalname.toLowerCase().substring(req.file.originalname.lastIndexOf('.'));
 
     try {
+      // Decide how to parse based on the provided extension.
       if (fileExt === '.csv') {
         customers = await parseCSV(req.file.buffer);
       } else if (fileExt === '.xls' || fileExt === '.xlsx') {
@@ -104,6 +110,7 @@ router.post('/customers', authenticateToken, upload.single('file'), async (req, 
       });
     }
 
+    // Clean headers and ensure we have the bare minimum fields.
     const validCustomers = customers.filter(customer => {
       const cleanCustomer = {};
       Object.keys(customer).forEach(key => {
@@ -135,6 +142,7 @@ router.post('/customers', authenticateToken, upload.single('file'), async (req, 
 
     const distributions = distributeCustomers(normalizedCustomers, agents);
 
+    // Push assignments to each agent separately so history is preserved.
     const updatePromises = agents.map((agent, index) => {
       return Agent.findByIdAndUpdate(
         agent._id,
@@ -201,6 +209,7 @@ router.post('/customers', authenticateToken, upload.single('file'), async (req, 
 
 router.get('/distribution', authenticateToken, async (req, res) => {
   try {
+    // Agent list doubles as both roster + distribution snapshot.
     const agents = await Agent.find().select('-password');
 
     const distribution = agents.map(agent => ({

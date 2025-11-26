@@ -1,3 +1,4 @@
+// Distributions expose historical uploads with some light enrichment.
 const express = require('express');
 const router = express.Router();
 const Distribution = require('../models/Distribution');
@@ -5,12 +6,14 @@ const Agent = require('../models/Agent');
 const Admin = require('../models/Admin');
 const authenticateToken = require('../middleware/auth');
 
+// Everything here is admin-only, so we block anonymous callers.
 router.use(authenticateToken);
 
 router.get('/', async (req, res) => {
   try {
     const { startDate, endDate, filename, agentId, page = 1, limit = 20 } = req.query;
 
+    // Dynamically assemble the query so unused filters stay cheap.
     const filter = {};
     if (filename) filter.filename = { $regex: filename, $options: 'i' };
     if (startDate || endDate) {
@@ -23,6 +26,7 @@ router.get('/', async (req, res) => {
       filter['assignments.agent'] = agentId;
     }
 
+    // Basic pagination math — one-based pages coming from the UI.
     const skip = (Math.max(1, parseInt(page)) - 1) * parseInt(limit);
 
     const docs = await Distribution.find(filter)
@@ -31,6 +35,7 @@ router.get('/', async (req, res) => {
       .limit(parseInt(limit))
       .lean();
 
+    // Collect agent/admin IDs so we can hydrate names in a single query each.
     const agentIds = new Set();
     const adminIds = new Set();
     docs.forEach(d => {
@@ -46,6 +51,7 @@ router.get('/', async (req, res) => {
     const adminMap = {};
     admins.forEach(a => { adminMap[String(a._id)] = a; });
 
+    // Shape the response to what the frontend expects.
     const results = docs.map(d => ({
       id: d._id,
       filename: d.filename,
@@ -71,6 +77,7 @@ router.get('/:id', async (req, res) => {
     const doc = await Distribution.findById(req.params.id).lean();
     if (!doc) return res.status(404).json({ success: false, message: 'Distribution not found.' });
 
+    // Pull agent and admin info in parallel-friendly batches.
     const agentIds = doc.assignments.map(a => a.agent);
     const agents = await Agent.find({ _id: { $in: agentIds } }).select('name email');
     const agentMap = {};
